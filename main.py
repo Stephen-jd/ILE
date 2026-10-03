@@ -31,6 +31,36 @@ def redirect_to_url(short_code: str, db: Session = Depends(get_db)):
     db.commit()
     return RedirectResponse(url=db_url.original_url)
 
+
+@app.get("/accounts/google/login/callback/")
+async def auth_callback(request: Request, db: Session = Depends(get_db)):
+    from backend.routers.auth import oauth, create_access_token
+    from ile_app.models import User
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get('userinfo')
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Could not validate credentials")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    email = user_info.get("email")
+    name = user_info.get("name")
+    picture = user_info.get("picture")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, name=name, picture=picture)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email, "id": user.id})
+
+    response = RedirectResponse(url=f"/?token={access_token}")
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+    return response
+
 # Mount static files for frontend
 frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

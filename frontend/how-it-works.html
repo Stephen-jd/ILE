@@ -33,7 +33,7 @@
   <main class="guide">
     <p class="eyebrow">ILE PROJECT GUIDE</p>
     <h1>How it works</h1>
-    <p class="guide-intro">ILE is an eight-tool workspace. The page is the launcher; each tool opens only when selected. Small file and text operations run in the browser or FastAPI, while AI analysis runs through Ollama on your computer.</p>
+    <p class="guide-intro">ILE is a ten-tool workspace. The page is the launcher; each tool opens only when selected. Small file and text operations run in the browser or FastAPI, while AI analysis runs through Ollama on your computer.</p>
 
     <section class="guide-section">
       <h2>Tools included</h2>
@@ -46,6 +46,8 @@
         <div class="requirement"><strong>PDF to Text</strong><span>Selectable PDF text extracted by pypdf.</span></div>
         <div class="requirement"><strong>Text to Audio</strong><span>gTTS generates speech using the selected language.</span></div>
         <div class="requirement"><strong>Image Resize</strong><span>Image resized locally in your browser; it is not uploaded.</span></div>
+        <div class="requirement"><strong>Hyperlink Generator</strong><span>Creates a safe, downloadable HTML link in your browser.</span></div>
+        <div class="requirement"><strong>URL Shortener</strong><span>Saves long URLs in SQLite and redirects through the local app.</span></div>
       </div>
     </section>
 
@@ -55,7 +57,8 @@
         <li>Python 3.10 or newer and the packages listed in <code>requirements.txt</code>.</li>
         <li>Internet access for gTTS speech generation and online text-to-image generation.</li>
         <li>Ollama running locally with the configured model installed for Resume Analyzer, Code Explainer, and Beautifier. The default model is <code>llama3</code>.</li>
-        <li>Optional Google OAuth credentials in <code>client_secret.json</code> for the Login button. The tools themselves do not require login.</li>
+        <li>Optional Google OAuth credentials in <code>client_secret.json</code> for Login and One Tap. The tools themselves do not require login.</li>
+        <li>For Google One Tap, authorize <code>http://127.0.0.1:8000</code> as a JavaScript origin in the Google Cloud OAuth client and sign in to a Google account in the browser.</li>
         <li>PDFs must contain selectable text; scanned image-only PDFs need OCR, which is not included.</li>
       </ul>
       <p>Set <code>ILE_OLLAMA_MODEL</code> to use another installed model, or <code>ILE_OLLAMA_URL</code> if Ollama runs at a different address.</p>
@@ -69,8 +72,9 @@
         <li>Start ILE with <code>python main.py</code>.</li>
         <li>Open <code>http://127.0.0.1:8000</code>.</li>
       </ol>
-      <pre>Browser tool → FastAPI endpoint → local SQLite / gTTS / Ollama
-Image resize and Markdown conversion stay in the browser.</pre>
+      <pre>URL Shortener → FastAPI → SQLite → redirect
+    Hyperlink, image resize, and Markdown → browser
+    AI tools → FastAPI → local Ollama</pre>
     </section>
   </main>
 </body>

@@ -13,7 +13,12 @@
 <body>
     <header class="site-header">
         <a class="brand" href="/" aria-label="ILE home">ILE</a>
-        <a class="login-link" href="/api/auth/login">Login</a>
+        <div class="auth-actions">
+            <a class="login-link" id="oauth-login" href="/api/auth/login">Login</a>
+            <span class="auth-user" id="auth-user" hidden></span>
+            <button class="login-link auth-logout" id="auth-logout" type="button" hidden>Logout</button>
+        </div>
+        <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
     </header>
 
     <main>
@@ -67,6 +72,16 @@
                 <span class="tool-icon teal" aria-hidden="true">⛶</span>
                 <span class="tool-title">Image Resize</span>
                 <span class="tool-desc">Change image dimensions</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="hyperlink">
+                <span class="tool-icon blue" aria-hidden="true">↗</span>
+                <span class="tool-title">Hyperlink Generator</span>
+                <span class="tool-desc">Create an HTML link</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="shortener">
+                <span class="tool-icon orange" aria-hidden="true">↔</span>
+                <span class="tool-title">URL Shortener</span>
+                <span class="tool-desc">Create a short, reusable URL</span>
             </button>
         </section>
 

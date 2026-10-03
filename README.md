@@ -1,16 +1,18 @@
 # ILE - I Love Everything
 
-ILE is a small multi-tool workspace with a FastAPI backend, SQLite database, and browser-based interface. The dashboard includes Resume Analyzer, Text to Image, Code Explainer, Markdown to HTML, Message Beautifier, PDF to Text, Text to Audio, and Image Resize.
+ILE is a small multi-tool workspace with a FastAPI backend, SQLite database, and browser-based interface. The dashboard includes Resume Analyzer, Text to Image, Code Explainer, Markdown to HTML, Message Beautifier, PDF to Text, Text to Audio, Image Resize, Hyperlink Generator, and URL Shortener.
 
 ## Requirements
 
 - Python 3.10 or newer
 - Python packages from `requirements.txt`
-- Internet access for gTTS and online image generation
+- Internet access for gTTS, online image generation, and Google sign-in
 - Ollama plus an installed model (default: `llama3`) for Resume Analyzer, Code Explainer, and Message Beautifier
 - Optional Google OAuth credentials in `client_secret.json` for login; tool use does not require login
+- For Google One Tap, add `http://127.0.0.1:8000` to the OAuth client's Authorized JavaScript origins in Google Cloud Console
+- One Tap requires an eligible Google account in the browser; use Login if the automatic prompt is suppressed
 
-Scanned image-only PDFs are not OCR'd. Image Resize and Markdown conversion run locally in the browser. Full setup details are on `/how-it-works.html`.
+Scanned image-only PDFs are not OCR'd. Image Resize, Markdown conversion, and Hyperlink Generator run locally in the browser. URL Shortener stores destinations in SQLite. Full setup details are on `/how-it-works.html`.
 
 ## Run locally
 

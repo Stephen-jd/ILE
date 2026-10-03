@@ -3,6 +3,7 @@ import os
 import re
 import secrets
 import string
+from urllib.parse import urlsplit
 
 import requests
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -63,8 +64,19 @@ def create_short_url(request: Request, payload: dict, db: Session = Depends(get_
     original_url = (payload or {}).get("url", "").strip()
     if not original_url:
         raise HTTPException(status_code=400, detail="URL is required")
-    if not original_url.startswith(("http://", "https://")):
+    parsed_url = urlsplit(original_url)
+    if parsed_url.scheme and parsed_url.scheme not in {"http", "https"}:
+        raise HTTPException(status_code=400, detail="Enter a valid HTTP or HTTPS URL")
+    if not parsed_url.scheme:
         original_url = "https://" + original_url
+    try:
+        parsed_url = urlsplit(original_url)
+        valid_destination = parsed_url.scheme in {"http", "https"} and bool(parsed_url.hostname)
+        parsed_url.port
+    except ValueError:
+        valid_destination = False
+    if not valid_destination:
+        raise HTTPException(status_code=400, detail="Enter a valid HTTP or HTTPS URL")
 
     existing = db.query(ShortURL).filter(ShortURL.original_url == original_url).first()
     if existing:

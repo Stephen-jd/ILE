@@ -33,9 +33,13 @@ oauth.register(
     }
 )
 
+@router.get("/config")
+def google_auth_config():
+    return {"enabled": bool(GOOGLE_CLIENT_ID), "client_id": GOOGLE_CLIENT_ID}
+
 @router.get("/login")
 async def login(request: Request):
-    redirect_uri = request.url_for('auth')
+    redirect_uri = 'http://127.0.0.1:8000/accounts/google/login/callback/'
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth")

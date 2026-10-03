@@ -4,6 +4,84 @@ const dialogContent = document.getElementById('dialog-content');
 const toolCards = [...document.querySelectorAll('[data-tool]')];
 const toolSearch = document.getElementById('tool-search');
 
+function getAuthToken() {
+    const params = new URLSearchParams(window.location.search);
+    const queryToken = params.get('token');
+    if (queryToken) {
+        localStorage.setItem('ile_token', queryToken);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    return queryToken || localStorage.getItem('ile_token');
+}
+
+function setAuthStatus(message) {
+    const status = document.getElementById('auth-status');
+    if (status) status.textContent = message;
+}
+
+async function loadGoogleIdentityServices() {
+    if (window.google?.accounts?.id) return;
+    await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.append(script);
+    });
+}
+
+async function handleGoogleCredential(response) {
+    setAuthStatus('Signing in...');
+    try {
+        const result = await readResponse(await fetch('/api/auth/onetap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential })
+        }));
+        localStorage.setItem('ile_token', result.token);
+        window.location.reload();
+    } catch (error) {
+        setAuthStatus(error.message);
+    }
+}
+
+async function loadSignedInUser(token) {
+    if (!token) return;
+    try {
+        const response = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error('Session expired');
+        const user = await response.json();
+        document.getElementById('oauth-login').hidden = true;
+        document.getElementById('auth-user').textContent = user.name || user.email;
+        document.getElementById('auth-user').hidden = false;
+        document.getElementById('auth-logout').hidden = false;
+    } catch {
+        localStorage.removeItem('ile_token');
+    }
+}
+
+async function setupGoogleSignIn() {
+    const token = getAuthToken();
+    await loadSignedInUser(token);
+    try {
+        const config = await readResponse(await fetch('/api/auth/config'));
+        if (!config.enabled || !config.client_id || localStorage.getItem('ile_token')) return;
+        await loadGoogleIdentityServices();
+        window.google.accounts.id.initialize({
+            client_id: config.client_id,
+            callback: handleGoogleCredential,
+            auto_select: false,
+            cancel_on_tap_outside: false,
+            context: 'signin'
+        });
+        window.google.accounts.id.prompt();
+    } catch (error) {
+        setAuthStatus('Google sign-in could not load. Use Login instead.');
+        console.error('Google sign-in setup failed:', error);
+    }
+}
+
 const languages = [
     ['en', 'English'], ['hi', 'Hindi'], ['es', 'Spanish'], ['fr', 'French'],
     ['de', 'German'], ['it', 'Italian'], ['ja', 'Japanese'], ['pt', 'Portuguese'],
@@ -88,6 +166,32 @@ const toolViews = {
           <button class="primary-button" id="resize-run" type="button">Resize and download</button>
           <p class="status-message" id="resize-status" role="status"></p>
         </div>`
+        },
+        hyperlink: {
+                title: 'Hyperlink Generator',
+                content: `<div class="tool-form">
+                    <div class="field"><label for="hyperlink-url">URL</label><input id="hyperlink-url" type="text" inputmode="url" placeholder="https://example.com"></div>
+                    <div class="field"><label for="hyperlink-label">Link text</label><input id="hyperlink-label" type="text" placeholder="Visit our website"></div>
+                    <button class="primary-button" id="hyperlink-run" type="button">Generate HTML link</button>
+                    <p class="status-message" id="hyperlink-status" role="status"></p>
+                    <section class="result-panel" id="hyperlink-result" hidden>
+                        <textarea id="hyperlink-output" readonly aria-label="Generated HTML link"></textarea>
+                        <div class="result-actions"><button class="subtle-button" id="hyperlink-copy" type="button">Copy HTML</button><button class="subtle-button" id="hyperlink-download" type="button">Download HTML</button></div>
+                        <div class="result-preview" id="hyperlink-preview"></div>
+                    </section>
+                </div>`
+        },
+        shortener: {
+                title: 'URL Shortener',
+                content: `<div class="tool-form">
+                    <div class="field"><label for="shortener-url">Long URL</label><input id="shortener-url" type="text" inputmode="url" placeholder="https://example.com/page"></div>
+                    <button class="primary-button" id="shortener-run" type="button">Shorten URL</button>
+                    <p class="status-message" id="shortener-status" role="status"></p>
+                    <section class="result-panel" id="shortener-result" hidden>
+                        <div class="field"><label for="shortener-output">Short URL</label><input id="shortener-output" type="text" readonly></div>
+                        <div class="result-actions"><button class="subtle-button" id="shortener-copy" type="button">Copy URL</button><a class="subtle-button" id="shortener-open" target="_blank" rel="noopener noreferrer">Open short URL</a></div>
+                    </section>
+                </div>`
     }
 };
 
@@ -269,6 +373,63 @@ function wireTool(toolId) {
                 setStatus('resize-status', `Downloaded ${width} × ${height} image.`);
             } catch (error) { setStatus('resize-status', error.message || 'Image resizing failed.'); }
         });
+    } else if (toolId === 'hyperlink') {
+        document.getElementById('hyperlink-run').addEventListener('click', () => {
+            const rawUrl = document.getElementById('hyperlink-url').value.trim();
+            const label = document.getElementById('hyperlink-label').value.trim();
+            if (!rawUrl || !label) return setStatus('hyperlink-status', 'Enter both a URL and link text.');
+            try {
+                const candidate = /^[a-z][a-z\d+.-]*:/i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+                const url = new URL(candidate);
+                if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Only HTTP and HTTPS links are supported.');
+                const link = document.createElement('a');
+                link.href = url.href;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = label;
+                document.getElementById('hyperlink-output').value = link.outerHTML;
+                document.getElementById('hyperlink-preview').replaceChildren(link.cloneNode(true));
+                document.getElementById('hyperlink-result').hidden = false;
+                setStatus('hyperlink-status', 'HTML link generated.');
+            } catch (error) {
+                setStatus('hyperlink-status', error.message || 'Enter a valid web URL.');
+            }
+        });
+        document.getElementById('hyperlink-copy').addEventListener('click', () => copyText('hyperlink-output', 'HTML link copied.'));
+        document.getElementById('hyperlink-download').addEventListener('click', () => {
+            const markup = document.getElementById('hyperlink-output').value;
+            downloadText('hyperlink.html', `<!doctype html><html><body>${markup}</body></html>`, 'text/html');
+        });
+    } else if (toolId === 'shortener') {
+        document.getElementById('shortener-run').addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            const url = document.getElementById('shortener-url').value.trim();
+            if (!url) return setStatus('shortener-status', 'Enter a URL to shorten.');
+            button.disabled = true;
+            setStatus('shortener-status', 'Creating your short URL...');
+            document.getElementById('shortener-result').hidden = true;
+            try {
+                const data = await readResponse(await fetch('/api/tools/shorten', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                }));
+                document.getElementById('shortener-output').value = data.short_url;
+                document.getElementById('shortener-open').href = data.short_url;
+                document.getElementById('shortener-result').hidden = false;
+                setStatus('shortener-status', 'Short URL created and saved.');
+            } catch (error) {
+                setStatus('shortener-status', error.message);
+            } finally {
+                button.disabled = false;
+            }
+        });
+        document.getElementById('shortener-copy').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(document.getElementById('shortener-output').value);
+                setStatus('shortener-status', 'Short URL copied.');
+            } catch { setStatus('shortener-status', 'Copy failed.'); }
+        });
     }
 }
 
@@ -335,3 +496,11 @@ document.getElementById('tool-search-form').addEventListener('submit', (event) =
     const firstVisible = toolCards.find((card) => !card.hidden);
     if (firstVisible) firstVisible.click();
 });
+
+document.getElementById('auth-logout').addEventListener('click', () => {
+    localStorage.removeItem('ile_token');
+    window.google?.accounts?.id?.disableAutoSelect();
+    window.location.reload();
+});
+
+setupGoogleSignIn();
