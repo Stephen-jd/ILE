@@ -1,21 +1,56 @@
 import io
-import random
+import os
+import re
+import secrets
 import string
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+import requests
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from gtts import gTTS
+from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
-from ile_project_settings import get_db
 from ile_app.models import ShortURL
+from ile_project_settings import get_db
 
 tools_router = APIRouter()
+OLLAMA_URL = os.getenv("ILE_OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("ILE_OLLAMA_MODEL", "llama3")
 
 
-def generate_short_code(length=6):
-    chars = string.ascii_letters + string.digits
-    return "".join(random.choice(chars) for _ in range(length))
+def _ask_ollama(prompt: str) -> str:
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL.rstrip('/')}/api/generate",
+            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
+            timeout=120,
+        )
+        response.raise_for_status()
+        answer = response.json().get("response", "").strip()
+        if not answer:
+            raise HTTPException(status_code=502, detail="The local AI model returned an empty response.")
+        return answer
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Ollama is unavailable. Start Ollama and install the '{OLLAMA_MODEL}' model.",
+        ) from exc
+
+
+def _read_pdf(contents: bytes) -> str:
+    try:
+        reader = PdfReader(io.BytesIO(contents))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Could not read this PDF. Check that it is a valid, unencrypted PDF.") from exc
+    if not text:
+        raise HTTPException(status_code=400, detail="No selectable text was found in this PDF.")
+    return text
+
+
+def generate_short_code(length: int = 6) -> str:
+    return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 
 @tools_router.get("/health")
@@ -28,9 +63,8 @@ def create_short_url(request: Request, payload: dict, db: Session = Depends(get_
     original_url = (payload or {}).get("url", "").strip()
     if not original_url:
         raise HTTPException(status_code=400, detail="URL is required")
-
     if not original_url.startswith(("http://", "https://")):
-        original_url = "http://" + original_url
+        original_url = "https://" + original_url
 
     existing = db.query(ShortURL).filter(ShortURL.original_url == original_url).first()
     if existing:
@@ -39,12 +73,10 @@ def create_short_url(request: Request, payload: dict, db: Session = Depends(get_
     short_code = generate_short_code()
     while db.query(ShortURL).filter(ShortURL.short_code == short_code).first():
         short_code = generate_short_code()
-
     new_url = ShortURL(original_url=original_url, short_code=short_code)
     db.add(new_url)
     db.commit()
     db.refresh(new_url)
-
     return {"short_url": f"{request.base_url}s/{new_url.short_code}"}
 
 
@@ -52,61 +84,50 @@ def create_short_url(request: Request, payload: dict, db: Session = Depends(get_
 async def text_to_audio(payload: dict):
     text = (payload or {}).get("text", "").strip()
     language = (payload or {}).get("lang", "en").strip() or "en"
-
     if not text:
         raise HTTPException(status_code=400, detail="Text is required")
-
     try:
-        tts = gTTS(text=text, lang=language, slow=False)
         buffer = io.BytesIO()
-        tts.write_to_fp(buffer)
-        buffer.seek(0)
-        return Response(content=buffer.read(), media_type="audio/mpeg")
+        gTTS(text=text, lang=language, slow=False).write_to_fp(buffer)
+        return Response(content=buffer.getvalue(), media_type="audio/mpeg")
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"TTS Error: {str(exc)}")
-from sqlalchemy import func
+        raise HTTPException(status_code=400, detail=f"Could not generate speech for this language: {exc}") from exc
 
 
-@tools_router.get("/admin-stats")
-def get_admin_stats(db: Session = Depends(get_db)):
-    from ile_app.models import User, ToolData
-    from sqlalchemy import func
-    
-    users = db.query(User).all()
-    user_data = [{"name": u.name, "email": u.email, "is_admin": u.is_admin} for u in users]
-    
-    tool_counts = db.query(ToolData.tool_name, func.count(ToolData.id)).group_by(ToolData.tool_name).all()
-    labels = [tc[0] for tc in tool_counts] if tool_counts else ['No Data']
-    data = [tc[1] for tc in tool_counts] if tool_counts else [1]
-
-    return {
-        "users": len(users),
-        "user_list": user_data,
-        "tool_labels": labels,
-        "tool_data": data
-    }
+@tools_router.post("/pdf-to-text")
+async def pdf_to_text(pdf: UploadFile = File(...)):
+    return {"text": _read_pdf(await pdf.read())}
 
 
-from pydantic import BaseModel
-class ChatRequest(BaseModel):
-    prompt: str
+@tools_router.post("/resume-analyzer")
+async def resume_analyzer(job_description: str = Form(...), resume: UploadFile = File(...)):
+    resume_text = _read_pdf(await resume.read())[:18000]
+    job_description = job_description.strip()
+    if not job_description:
+        raise HTTPException(status_code=400, detail="A job description is required.")
 
-@tools_router.post("/chat")
-def ollama_chat(req: ChatRequest, db: Session = Depends(get_db)):
-    import requests
-    try:
-        response = requests.post('http://localhost:11434/api/generate', json={
-            "model": "llama3",
-            "prompt": req.prompt,
-            "stream": False
-        })
-        ai_resp = response.json().get('response', '')
-        
-        from ile_app.models import ToolData
-        new_data = ToolData(tool_name="Main AI Chat", data=req.prompt)
-        db.add(new_data)
-        db.commit()
-        
-        return {"response": ai_resp}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    answer = _ask_ollama(
+        "Compare this resume with the job description. Return a match score from 0 to 100, "
+        "then summarize matching skills, missing skills, and concrete resume improvements. "
+        "Do not invent experience.\n\n"
+        f"JOB DESCRIPTION:\n{job_description[:12000]}\n\nRESUME:\n{resume_text}"
+    )
+    score_match = re.search(r"(?:score|match)[^0-9]{0,20}(\d{1,3})\s*(?:/\s*100|%)?", answer, re.IGNORECASE)
+    score = min(100, int(score_match.group(1))) if score_match else None
+    return {"score": score if score is not None else "N/A", "analysis": answer, "corrections": "See the analysis above for suggested improvements."}
+
+
+@tools_router.post("/explain-code")
+def explain_code(payload: dict):
+    code = (payload or {}).get("code", "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Paste code to explain.")
+    return {"explanation": _ask_ollama(f"Explain this code clearly for a beginner. Describe its purpose and important steps.\n\n{code[:16000]}")}
+
+
+@tools_router.post("/beautify-message")
+def beautify_message(payload: dict):
+    message = (payload or {}).get("message", "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Enter a draft message first.")
+    return {"beautified": _ask_ollama(f"Rewrite this message to be clear, polite, and grammatically correct. Preserve its original meaning. Return only the rewritten message.\n\n{message[:12000]}")}

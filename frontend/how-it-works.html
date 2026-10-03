@@ -3,234 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ILE - How It Works</title>
+  <title>ILE | How it works and requirements</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
   <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --card: #1f2937;
-      --text: #f8fafc;
-      --muted: #cbd5e1;
-      --accent: #ef4444;
-      --line: #374151;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 60px 24px 80px;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 28px;
-    }
-
-    .brand {
-      font-size: 2rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-
-    .nav-btn {
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-
-    h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      margin: 0 0 16px;
-    }
-
-    .lead {
-      color: var(--muted);
-      font-size: 1.08rem;
-      margin-bottom: 30px;
-    }
-
-    .steps {
-      display: grid;
-      gap: 22px;
-      margin-top: 30px;
-    }
-
-    .flow-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 18px;
-      margin: 28px 0;
-    }
-
-    .flow-box {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 22px 20px;
-      min-height: 170px;
-    }
-
-    .flow-box strong {
-      display: block;
-      margin-bottom: 10px;
-      color: #fff;
-      font-size: 1.05rem;
-    }
-
-    .step {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 22px 20px;
-    }
-
-    .step-number {
-      display: inline-block;
-      width: 38px;
-      height: 38px;
-      line-height: 38px;
-      text-align: center;
-      background: var(--accent);
-      color: white;
-      border-radius: 50%;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
-    h2 {
-      margin: 0 0 8px;
-      font-size: 1.3rem;
-    }
-
-    p, li {
-      color: var(--muted);
-    }
-
-    ul {
-      margin: 8px 0 0 18px;
-      padding: 0;
-    }
-
-    .code-box {
-      margin-top: 32px;
-      background: #020817;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 18px;
-      overflow-x: auto;
-    }
-
-    pre {
-      margin: 0;
-      color: #e2e8f0;
-      font-size: 0.92rem;
-    }
+    .guide { width: min(100% - 36px, 850px); margin: 0 auto; padding: 32px 0 60px; }
+    .guide h1 { margin: 0 0 10px; font: 400 clamp(30px, 5vw, 43px)/1.2 'Playfair Display', Georgia, serif; }
+    .guide-intro { max-width: 650px; margin: 0 0 28px; color: #69717d; font-size: 14px; line-height: 1.7; }
+    .guide-section { padding: 20px 0; border-top: 1px solid #e4e7eb; }
+    .guide-section h2 { margin: 0 0 12px; font-size: 17px; }
+    .guide-section p, .guide-section li { color: #626a75; font-size: 13px; line-height: 1.7; }
+    .guide-section ul, .guide-section ol { padding-left: 20px; }
+    .requirements { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px; }
+    .requirement { padding: 11px 0; border-bottom: 1px solid #eceef0; }
+    .requirement strong { display: block; font-size: 13px; }
+    .requirement span { color: #737b86; font-size: 12px; }
+    .guide code { padding: 2px 5px; border-radius: 3px; background: #f0f1f2; font-size: 12px; }
+    .guide pre { overflow-x: auto; padding: 14px; border-radius: 6px; background: #20252c; color: #f5f6f8; font-size: 12px; line-height: 1.6; }
+    @media (max-width: 560px) { .requirements { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="topbar">
-      <div class="brand">ILE</div>
-      <button class="nav-btn" onclick="window.location.href='/'">Back to App</button>
-    </div>
+  <header class="site-header">
+    <a class="brand" href="/">ILE</a>
+    <a class="login-link" href="/">Back to tools</a>
+  </header>
+  <main class="guide">
+    <p class="eyebrow">ILE PROJECT GUIDE</p>
+    <h1>How it works</h1>
+    <p class="guide-intro">ILE is an eight-tool workspace. The page is the launcher; each tool opens only when selected. Small file and text operations run in the browser or FastAPI, while AI analysis runs through Ollama on your computer.</p>
 
-    <h1>How ILE works</h1>
-    <p class="lead">
-      ILE is a simple local AI tool app. The user types text, chooses a language, and the server converts it into speech using Google Text-to-Speech.
-    </p>
+    <section class="guide-section">
+      <h2>Tools included</h2>
+      <div class="requirements">
+        <div class="requirement"><strong>Resume Analyzer</strong><span>PDF resume and job description, analyzed with Ollama.</span></div>
+        <div class="requirement"><strong>Text to Image</strong><span>Prompt sent to an online image-generation service.</span></div>
+        <div class="requirement"><strong>Code Explainer</strong><span>Code explanation generated by the local Ollama model.</span></div>
+        <div class="requirement"><strong>MD to HTML</strong><span>Basic headings, paragraphs, and lists converted in the browser.</span></div>
+        <div class="requirement"><strong>Beautifier</strong><span>Draft rewritten by the local Ollama model.</span></div>
+        <div class="requirement"><strong>PDF to Text</strong><span>Selectable PDF text extracted by pypdf.</span></div>
+        <div class="requirement"><strong>Text to Audio</strong><span>gTTS generates speech using the selected language.</span></div>
+        <div class="requirement"><strong>Image Resize</strong><span>Image resized locally in your browser; it is not uploaded.</span></div>
+      </div>
+    </section>
 
-    <div class="flow-row">
-      <div class="flow-box">
-        <strong>Frontend</strong>
-        User types text and chooses language in the page.
-      </div>
-      <div class="flow-box">
-        <strong>JavaScript</strong>
-        Browser sends a POST request to the API with the selected text and language.
-      </div>
-      <div class="flow-box">
-        <strong>Backend</strong>
-        FastAPI receives the request and calls Google Text-to-Speech.
-      </div>
-      <div class="flow-box">
-        <strong>Audio Output</strong>
-        The browser receives audio and plays it automatically.
-      </div>
-    </div>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-number">1</div>
-        <h2>User opens the app</h2>
-        <p>The browser loads the main page and shows the text area, language dropdown, copy button, and generate audio button.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-number">2</div>
-        <h2>User enters text</h2>
-        <p>The user pastes or types the text they want to hear. They can also copy the text before playing it.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-number">3</div>
-        <h2>User chooses language</h2>
-        <p>The selected language controls the voice. Example: English, Hindi, Spanish, French, German, and more.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-number">4</div>
-        <h2>Frontend sends the request</h2>
-        <p>The JavaScript function sends a JSON payload to the backend route /api/tools/text-to-audio.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-number">5</div>
-        <h2>Backend generates audio</h2>
-        <p>The FastAPI route receives the text, calls gTTS with the chosen language, and converts it into an audio stream.</p>
-      </div>
-
-      <div class="step">
-        <div class="step-number">6</div>
-        <h2>Browser plays the result</h2>
-        <p>The audio file is returned to the browser and the HTML audio player starts playing it right away.</p>
-      </div>
-    </div>
-
-    <div class="code-box">
-      <pre>POST /api/tools/text-to-audio
-{
-  "text": "hello welcome to ILE",
-  "lang": "en"
-}</pre>
-    </div>
-
-    <div class="step" style="margin-top: 28px;">
-      <div class="step-number">7</div>
-      <h2>Architecture summary</h2>
+    <section class="guide-section">
+      <h2>Requirements</h2>
       <ul>
-        <li>Frontend: simple HTML + JavaScript page</li>
-        <li>Backend: FastAPI server handles requests</li>
-        <li>TTS engine: gTTS converts text to speech</li>
-        <li>Database: SQLite for local app data</li>
-        <li>Result: clean and easy-to-understand flow</li>
+        <li>Python 3.10 or newer and the packages listed in <code>requirements.txt</code>.</li>
+        <li>Internet access for gTTS speech generation and online text-to-image generation.</li>
+        <li>Ollama running locally with the configured model installed for Resume Analyzer, Code Explainer, and Beautifier. The default model is <code>llama3</code>.</li>
+        <li>Optional Google OAuth credentials in <code>client_secret.json</code> for the Login button. The tools themselves do not require login.</li>
+        <li>PDFs must contain selectable text; scanned image-only PDFs need OCR, which is not included.</li>
       </ul>
-    </div>
-  </div>
+      <p>Set <code>ILE_OLLAMA_MODEL</code> to use another installed model, or <code>ILE_OLLAMA_URL</code> if Ollama runs at a different address.</p>
+    </section>
+
+    <section class="guide-section">
+      <h2>Run the app</h2>
+      <ol>
+        <li>Install dependencies: <code>python -m pip install -r requirements.txt</code></li>
+        <li>For AI tools, start Ollama and install a model, for example <code>ollama pull llama3</code>.</li>
+        <li>Start ILE with <code>python main.py</code>.</li>
+        <li>Open <code>http://127.0.0.1:8000</code>.</li>
+      </ol>
+      <pre>Browser tool → FastAPI endpoint → local SQLite / gTTS / Ollama
+Image resize and Markdown conversion stay in the browser.</pre>
+    </section>
+  </main>
 </body>
 </html>

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+gTTS
+pypdf
+python-multipart
+requests
+PyJWT
+Authlib
+google-auth

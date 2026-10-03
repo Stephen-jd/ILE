@@ -1,82 +1,34 @@
 # ILE - I Love Everything
 
-ILE is a lightweight AI text-to-audio app built with FastAPI, SQLite, and gTTS.
+ILE is a small multi-tool workspace with a FastAPI backend, SQLite database, and browser-based interface. The dashboard includes Resume Analyzer, Text to Image, Code Explainer, Markdown to HTML, Message Beautifier, PDF to Text, Text to Audio, and Image Resize.
 
-## What this project does
+## Requirements
 
-- Accepts text input from the browser
-- Lets the user select a language
-- Converts the text into spoken audio
-- Returns the audio file to the browser
-- Plays the generated voice automatically
+- Python 3.10 or newer
+- Python packages from `requirements.txt`
+- Internet access for gTTS and online image generation
+- Ollama plus an installed model (default: `llama3`) for Resume Analyzer, Code Explainer, and Message Beautifier
+- Optional Google OAuth credentials in `client_secret.json` for login; tool use does not require login
 
-## Main flow
-
-1. User opens the app page
-2. User types or pastes text
-3. User selects the language
-4. Frontend sends the request to the backend
-5. Backend uses gTTS to generate audio
-6. Browser plays the audio result
-
-## Tech stack
-
-- Backend: FastAPI
-- Database: SQLite
-- Frontend: HTML + JavaScript
-- Voice generation: gTTS
-
-## Project structure
-
-```text
-ILE/
-├── backend/
-│   ├── auth.py
-│   ├── routers/
-│   │   ├── auth.py
-│   │   └── dev.py
-│   └── services/
-├── frontend/
-│   ├── css/
-│   ├── js/
-│   ├── how-it-works.html
-│   └── index.html
-├── ile_app/
-│   ├── models.py
-│   └── views.py
-├── main.py
-├── ile_project_settings.py
-├── README.md
-├── .gitignore
-└── ile.db
-```
+Scanned image-only PDFs are not OCR'd. Image Resize and Markdown conversion run locally in the browser. Full setup details are on `/how-it-works.html`.
 
 ## Run locally
 
-1. Activate the virtual environment:
-
 ```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-2. Start the app:
-
-```powershell
+python -m pip install -r requirements.txt
+ollama pull llama3
 python main.py
 ```
 
-3. Open in browser:
+Open `http://127.0.0.1:8000/`. Ollama is only required for the three AI analysis tools. Set `ILE_OLLAMA_MODEL` or `ILE_OLLAMA_URL` to use another local model or Ollama address.
+
+## Main structure
 
 ```text
-http://127.0.0.1:8000/
+frontend/       Dashboard, styles, browser tool workflows
+ile_app/views.py FastAPI tool endpoints
+ile_app/models.py SQLite models
+ile_project_settings.py SQLite connection
+main.py         Application startup and static hosting
 ```
 
-## Notes
-
-- This project uses SQLite, not MySQL.
-- The app is intentionally small and clean.
-- There is a dedicated explanation page at /how-it-works.html
-
-## Clean project status
-
-The repository has been simplified to keep only the real app structure and remove the one-off admin and repair files.

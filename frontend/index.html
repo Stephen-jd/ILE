@@ -3,123 +3,85 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ILE Text to Audio</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #111827;
-            color: #f9fafb;
-            display: grid;
-            place-items: center;
-            min-height: 100vh;
-        }
-        .card {
-            width: min(760px, 92vw);
-            background: #1f2937;
-            padding: 28px;
-            border-radius: 18px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-        }
-        h1 {
-            margin: 0 0 20px;
-            font-size: 2rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        select, textarea, button {
-            width: 100%;
-            border-radius: 10px;
-            border: 1px solid #374151;
-            padding: 12px 14px;
-            font-size: 1rem;
-        }
-        select, textarea {
-            background: #0f172a;
-            color: #f9fafb;
-        }
-        textarea {
-            min-height: 180px;
-            resize: vertical;
-            margin-top: 10px;
-        }
-        .actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        button {
-            background: #ef4444;
-            color: white;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-        }
-        button.secondary {
-            background: #374151;
-        }
-        .link-btn {
-            margin-top: 18px;
-            display: inline-block;
-            text-decoration: none;
-            text-align: center;
-            background: #374151;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-        .audio-box {
-            margin-top: 20px;
-            display: none;
-        }
-        audio {
-            width: 100%;
-            margin-top: 8px;
-        }
-        .status {
-            margin-top: 12px;
-            color: #cbd5e1;
-            min-height: 22px;
-        }
-    </style>
+    <meta name="theme-color" content="#fbfbfa" />
+    <title>ILE | Let's simplify everything</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-    <div class="card">
-        <h1>Text to Audio</h1>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="ILE home">ILE</a>
+        <a class="login-link" href="/api/auth/login">Login</a>
+    </header>
 
-        <label for="tts-language">Language</label>
-        <select id="tts-language">
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-            <option value="it">Italian</option>
-            <option value="ja">Japanese</option>
-        </select>
+    <main>
+        <section class="hero" aria-labelledby="hero-title">
+            <p class="eyebrow">WE DON'T JUST BUILD. WE SOLVE.</p>
+            <h1 id="hero-title">Let's simplify everything.</h1>
+            <form class="search" id="tool-search-form" role="search">
+                <span class="search-mark" aria-hidden="true">✳</span>
+                <input id="tool-search" type="search" autocomplete="off" placeholder="What do you want to build today?" aria-label="Find a tool" />
+                <button type="submit" aria-label="Search tools">→</button>
+            </form>
+        </section>
 
-        <label for="tts-text" style="margin-top: 18px;">Text</label>
-        <textarea id="tts-text" placeholder="Type or paste the text here..."></textarea>
+        <section class="tools-grid" aria-label="ILE tools">
+            <button class="tool-card" type="button" data-tool="resume">
+                <span class="tool-icon coral" aria-hidden="true">▣</span>
+                <span class="tool-title">Resume Analyzer (AI)</span>
+                <span class="tool-desc">Upload CV &amp; job description</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="image">
+                <span class="tool-icon red" aria-hidden="true">▧</span>
+                <span class="tool-title">Text to Image</span>
+                <span class="tool-desc">Generate images from prompts</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="code">
+                <span class="tool-icon green" aria-hidden="true">&lt;/&gt;</span>
+                <span class="tool-title">Code Explainer</span>
+                <span class="tool-desc">AI breaks down complex code</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="markdown">
+                <span class="tool-icon violet" aria-hidden="true">MD</span>
+                <span class="tool-title">MD to HTML</span>
+                <span class="tool-desc">Convert markdown instantly</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="beautify">
+                <span class="tool-icon pink" aria-hidden="true">✎</span>
+                <span class="tool-title">Beautifier</span>
+                <span class="tool-desc">Format your drafts</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="pdf">
+                <span class="tool-icon coral" aria-hidden="true">▧</span>
+                <span class="tool-title">PDF to Text</span>
+                <span class="tool-desc">Extract text from PDFs</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="audio">
+                <span class="tool-icon yellow" aria-hidden="true">◖))</span>
+                <span class="tool-title">Text to Audio</span>
+                <span class="tool-desc">Speak audio from text</span>
+            </button>
+            <button class="tool-card" type="button" data-tool="resize">
+                <span class="tool-icon teal" aria-hidden="true">⛶</span>
+                <span class="tool-title">Image Resize</span>
+                <span class="tool-desc">Change image dimensions</span>
+            </button>
+        </section>
 
-        <div class="actions">
-            <button id="generate-audio">Generate Audio</button>
-            <button id="copy-text" class="secondary">Copy Text</button>
+        <p class="empty-state" id="empty-state" hidden>No tools match that search.</p>
+        <footer class="site-footer"><a href="/how-it-works.html">How it works &amp; requirements</a></footer>
+    </main>
+
+    <dialog class="tool-dialog" id="tool-dialog" aria-labelledby="dialog-title">
+        <div class="dialog-head">
+            <h2 id="dialog-title"></h2>
+            <button class="icon-button" id="dialog-close" type="button" aria-label="Close tool">×</button>
         </div>
+        <div id="dialog-content"></div>
+    </dialog>
 
-        <a class="link-btn" href="/how-it-works.html">How it works</a>
-
-        <div class="status" id="status"></div>
-
-        <div class="audio-box" id="audio-box">
-            <audio id="tts-audio" controls></audio>
-        </div>
-    </div>
-
-    <script src="/js/app.js"></script>
+    <script src="/js/app.js" defer></script>
 </body>
 </html>
