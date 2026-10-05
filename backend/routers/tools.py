@@ -12,12 +12,12 @@ from gtts import gTTS
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
-from ile_app.models import ShortURL
-from ile_project_settings import get_db
+from backend.models import ShortURL
+from backend.database import get_db
 
 tools_router = APIRouter()
 OLLAMA_URL = os.getenv("ILE_OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("ILE_OLLAMA_MODEL", "llama3")
+OLLAMA_MODEL = os.getenv("ILE_OLLAMA_MODEL", "llama3.2")
 
 
 def _ask_ollama(prompt: str) -> str:
@@ -32,10 +32,26 @@ def _ask_ollama(prompt: str) -> str:
         if not answer:
             raise HTTPException(status_code=502, detail="The local AI model returned an empty response.")
         return answer
+    except requests.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else 502
+        if status_code == 404:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Ollama model '{OLLAMA_MODEL}' is not installed. Run `ollama pull {OLLAMA_MODEL}`.",
+            ) from exc
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ollama returned HTTP {status_code} while generating a response.",
+        ) from exc
+    except requests.Timeout as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Ollama did not respond within 120 seconds.",
+        ) from exc
     except requests.RequestException as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Ollama is unavailable. Start Ollama and install the '{OLLAMA_MODEL}' model.",
+            detail=f"Ollama is unavailable at {OLLAMA_URL}. Start Ollama and try again.",
         ) from exc
 
 

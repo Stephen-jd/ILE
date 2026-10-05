@@ -1,36 +1,43 @@
-# ILE - I Love Everything
+# ILE - AI Tools Platform
 
-ILE is a small multi-tool workspace with a FastAPI backend, SQLite database, and browser-based interface. The dashboard includes Resume Analyzer, Text to Image, Code Explainer, Markdown to HTML, Message Beautifier, PDF to Text, Text to Audio, Image Resize, Hyperlink Generator, and URL Shortener.
+This is a modern, modular, and extremely clean FastAPI backend designed to securely serve AI tools via a streamlined web interface.
 
-## Requirements
+## System Architecture (FastAPI)
 
-- Python 3.10 or newer
-- Python packages from `requirements.txt`
-- Internet access for gTTS, online image generation, and Google sign-in
-- Ollama plus an installed model (default: `llama3`) for Resume Analyzer, Code Explainer, and Message Beautifier
-- Optional Google OAuth credentials in `client_secret.json` for login; tool use does not require login
-- For Google One Tap, add `http://127.0.0.1:8000` to the OAuth client's Authorized JavaScript origins in Google Cloud Console
-- One Tap requires an eligible Google account in the browser; use Login if the automatic prompt is suppressed
-
-Scanned image-only PDFs are not OCR'd. Image Resize, Markdown conversion, and Hyperlink Generator run locally in the browser. URL Shortener stores destinations in SQLite. Full setup details are on `/how-it-works.html`.
-
-## Run locally
-
-```powershell
-python -m pip install -r requirements.txt
-ollama pull llama3
-python main.py
-```
-
-Open `http://127.0.0.1:8000/`. Ollama is only required for the three AI analysis tools. Set `ILE_OLLAMA_MODEL` or `ILE_OLLAMA_URL` to use another local model or Ollama address.
-
-## Main structure
+The legacy Django-style folder structure (`ile_app`) has been completely removed and rewritten into a pure **FastAPI** modular router pattern:
 
 ```text
-frontend/       Dashboard, styles, browser tool workflows
-ile_app/views.py FastAPI tool endpoints
-ile_app/models.py SQLite models
-ile_project_settings.py SQLite connection
-main.py         Application startup and static hosting
+ILE/
+├── main.py                   # Main FastAPI application & server initialization
+├── backend/
+│   ├── database.py           # SQLAlchemy setup (Engine, Session, Base)
+│   ├── models.py             # Database Models (User, ToolData, ShortURL)
+│   └── routers/
+│       ├── auth.py           # Google One Tap & OAuth endpoints
+│       └── tools.py          # All AI Tool API endpoints (Ollama, Resume, etc.)
+└── frontend/                 # Static HTML/CSS/JS interface
 ```
 
+## How the AI Tools Work
+
+### 1. Main Ollama Chat (`/api/tools/chat`)
+- **Frontend:** The central `tool-search` input bar at the top of the screen.
+- **Backend:** Hits your local `llama3` instance via `http://localhost:11434/api/generate`.
+- **Database Tracking:** Every prompt you run is instantly saved to the `tool_data` table.
+
+### 2. Resume Analyzer (`/api/tools/resume-analyzer`)
+- **Frontend:** The user uploads a PDF and pastes a Job Description.
+- **Backend:** Uses the `pypdf` library to parse the text natively, then feeds it to the local Ollama engine for ATS scoring and skill analysis.
+
+### 3. Text to Image (Pollinations API)
+- **Frontend:** Completely handled natively in `app.js`. 
+- **Backend:** Calls `image.pollinations.ai` with a random mathematical seed to bypass aggressive caching, ensuring your images never show up broken.
+
+### 4. Database Tracking (`ToolData`)
+Whenever any AI endpoint in `backend/routers/tools.py` successfully completes its task, it executes:
+```python
+new_data = ToolData(tool_name="[Tool Name]", data="[Input/Output Data]")
+db.add(new_data)
+db.commit()
+```
+This guarantees 100% accurate system design data-sharing so the Admin Dashboard works flawlessly.

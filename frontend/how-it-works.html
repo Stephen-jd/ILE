@@ -56,7 +56,7 @@
       <ul>
         <li>Python 3.10 or newer and the packages listed in <code>requirements.txt</code>.</li>
         <li>Internet access for gTTS speech generation and online text-to-image generation.</li>
-        <li>Ollama running locally with the configured model installed for Resume Analyzer, Code Explainer, and Beautifier. The default model is <code>llama3</code>.</li>
+        <li>Ollama running locally with the configured model installed for Resume Analyzer, Code Explainer, and Beautifier. The default model is <code>llama3.2</code>.</li>
         <li>Optional Google OAuth credentials in <code>client_secret.json</code> for Login and One Tap. The tools themselves do not require login.</li>
         <li>For Google One Tap, authorize <code>http://127.0.0.1:8000</code> as a JavaScript origin in the Google Cloud OAuth client and sign in to a Google account in the browser.</li>
         <li>PDFs must contain selectable text; scanned image-only PDFs need OCR, which is not included.</li>
@@ -68,7 +68,7 @@
       <h2>Run the app</h2>
       <ol>
         <li>Install dependencies: <code>python -m pip install -r requirements.txt</code></li>
-        <li>For AI tools, start Ollama and install a model, for example <code>ollama pull llama3</code>.</li>
+        <li>For AI tools, start Ollama and install a model, for example <code>ollama pull llama3.2</code>.</li>
         <li>Start ILE with <code>python main.py</code>.</li>
         <li>Open <code>http://127.0.0.1:8000</code>.</li>
       </ol>

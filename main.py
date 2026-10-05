@@ -3,10 +3,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from ile_project_settings import engine, Base, get_db
-from ile_app.models import ShortURL
+from backend.database import engine, Base, get_db
+from backend.models import ShortURL
 from backend.routers import auth, dev
-from ile_app import views
+from backend.routers import tools
 import os
 
 # Create database tables
@@ -19,7 +19,7 @@ app.add_middleware(SessionMiddleware, secret_key="some-random-string")
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(dev.dev_router, prefix="/api/dev", tags=["dev"])
-app.include_router(views.tools_router, prefix="/api/tools", tags=["tools"])
+app.include_router(tools.tools_router, prefix="/api/tools", tags=["tools"])
 
 @app.get("/s/{short_code}")
 def redirect_to_url(short_code: str, db: Session = Depends(get_db)):
@@ -35,7 +35,7 @@ def redirect_to_url(short_code: str, db: Session = Depends(get_db)):
 @app.get("/accounts/google/login/callback/")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
     from backend.routers.auth import oauth, create_access_token
-    from ile_app.models import User
+    from backend.models import User
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = token.get('userinfo')
@@ -58,7 +58,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.email, "id": user.id})
 
     response = RedirectResponse(url=f"/?token={access_token}")
-    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
     return response
 
 # Mount static files for frontend

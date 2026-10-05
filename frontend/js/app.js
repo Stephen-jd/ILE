@@ -49,7 +49,9 @@ async function handleGoogleCredential(response) {
 async function loadSignedInUser(token) {
     if (!token) return;
     try {
-        const response = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+                const response = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) throw new Error('Session expired');
         const user = await response.json();
         document.getElementById('oauth-login').hidden = true;
@@ -60,7 +62,6 @@ async function loadSignedInUser(token) {
         localStorage.removeItem('ile_token');
     }
 }
-
 async function setupGoogleSignIn() {
     const token = getAuthToken();
     await loadSignedInUser(token);
@@ -504,3 +505,9 @@ document.getElementById('auth-logout').addEventListener('click', () => {
 });
 
 setupGoogleSignIn();
+
+
+
+
+
+
