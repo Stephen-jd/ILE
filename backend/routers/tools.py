@@ -16,6 +16,31 @@ from backend.models import ShortURL
 from backend.database import get_db
 
 tools_router = APIRouter()
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    from backend.auth import decode_access_token
+    from backend.models import User
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        token = request.cookies.get("access_token")
+        if token and token.startswith('Bearer '):
+            token = token.split(" ", 1)[1]
+        elif token:
+            pass # token is already the token
+        else:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+    else:
+        token = auth_header.split(" ", 1)[1]
+
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == payload.get("id")).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 OLLAMA_URL = os.getenv("ILE_OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("ILE_OLLAMA_MODEL", "llama3.2")
 
@@ -76,7 +101,7 @@ def health_check():
 
 
 @tools_router.post("/shorten")
-def create_short_url(request: Request, payload: dict, db: Session = Depends(get_db)):
+def create_short_url(request: Request, payload: dict, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     original_url = (payload or {}).get("url", "").strip()
     if not original_url:
         raise HTTPException(status_code=400, detail="URL is required")
@@ -109,7 +134,7 @@ def create_short_url(request: Request, payload: dict, db: Session = Depends(get_
 
 
 @tools_router.post("/text-to-audio")
-async def text_to_audio(payload: dict):
+async def text_to_audio(payload: dict, current_user = Depends(get_current_user)):
     text = (payload or {}).get("text", "").strip()
     language = (payload or {}).get("lang", "en").strip() or "en"
     if not text:
@@ -123,12 +148,12 @@ async def text_to_audio(payload: dict):
 
 
 @tools_router.post("/pdf-to-text")
-async def pdf_to_text(pdf: UploadFile = File(...)):
+async def pdf_to_text(pdf: UploadFile = File(...), current_user = Depends(get_current_user)):
     return {"text": _read_pdf(await pdf.read())}
 
 
 @tools_router.post("/resume-analyzer")
-async def resume_analyzer(job_description: str = Form(...), resume: UploadFile = File(...)):
+async def resume_analyzer(job_description: str = Form(...), resume: UploadFile = File(...), current_user = Depends(get_current_user)):
     resume_text = _read_pdf(await resume.read())[:18000]
     job_description = job_description.strip()
     if not job_description:
@@ -146,7 +171,7 @@ async def resume_analyzer(job_description: str = Form(...), resume: UploadFile =
 
 
 @tools_router.post("/explain-code")
-def explain_code(payload: dict):
+def explain_code(payload: dict, current_user = Depends(get_current_user)):
     code = (payload or {}).get("code", "").strip()
     if not code:
         raise HTTPException(status_code=400, detail="Paste code to explain.")
@@ -154,8 +179,24 @@ def explain_code(payload: dict):
 
 
 @tools_router.post("/beautify-message")
-def beautify_message(payload: dict):
+def beautify_message(payload: dict, current_user = Depends(get_current_user)):
     message = (payload or {}).get("message", "").strip()
     if not message:
         raise HTTPException(status_code=400, detail="Enter a draft message first.")
     return {"beautified": _ask_ollama(f"Rewrite this message to be clear, polite, and grammatically correct. Preserve its original meaning. Return only the rewritten message.\n\n{message[:12000]}")}
+
+
+@tools_router.post("/chat")
+def chat_ollama(payload: dict, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    from backend.models import ToolData
+    prompt = (payload or {}).get("prompt", "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required")
+    
+    answer = _ask_ollama(prompt)
+    
+    new_data = ToolData(user_id=current_user.id, tool_name="Main AI Chat", data=prompt)
+    db.add(new_data)
+    db.commit()
+    
+    return {"response": answer}

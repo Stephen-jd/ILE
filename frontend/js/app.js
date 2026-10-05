@@ -1,3 +1,18 @@
+
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('ile_token');
+    if (!options.headers) options.headers = {};
+    if (token) {
+        options.headers['Authorization'] = 'Bearer ' + token;
+    }
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        setAuthStatus('You must be logged in to use this tool.');
+        throw new Error('You must be logged in to use this tool.');
+    }
+    return response;
+}
+
 const dialog = document.getElementById('tool-dialog');
 const dialogTitle = document.getElementById('dialog-title');
 const dialogContent = document.getElementById('dialog-content');
@@ -250,7 +265,7 @@ function wireTool(toolId) {
             button.disabled = true;
             setStatus('resume-status', 'Analyzing resume with your local AI model...');
             try {
-                const data = await readResponse(await fetch('/api/tools/resume-analyzer', { method: 'POST', body: form }));
+                const data = await readResponse(await authFetch('/api/tools/resume-analyzer', { method: 'POST', body: form }));
                 const result = document.getElementById('resume-result');
                 result.replaceChildren();
                 const heading = document.createElement('strong');
@@ -319,7 +334,7 @@ function wireTool(toolId) {
             button.disabled = true;
             setStatus('pdf-status', 'Extracting text...');
             try {
-                const data = await readResponse(await fetch('/api/tools/pdf-to-text', { method: 'POST', body: form }));
+                const data = await readResponse(await authFetch('/api/tools/pdf-to-text', { method: 'POST', body: form }));
                 document.getElementById('pdf-output').value = data.text;
                 document.getElementById('pdf-result').hidden = false;
                 setStatus('pdf-status', 'Text extracted.');
@@ -336,7 +351,7 @@ function wireTool(toolId) {
             button.disabled = true;
             setStatus('audio-status', 'Generating audio...');
             try {
-                const response = await fetch('/api/tools/text-to-audio', {
+                const response = await authFetch('/api/tools/text-to-audio', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang })
                 });
                 if (!response.ok) throw new Error((await response.json()).detail || 'Audio generation failed.');
@@ -410,7 +425,7 @@ function wireTool(toolId) {
             setStatus('shortener-status', 'Creating your short URL...');
             document.getElementById('shortener-result').hidden = true;
             try {
-                const data = await readResponse(await fetch('/api/tools/shorten', {
+                const data = await readResponse(await authFetch('/api/tools/shorten', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
@@ -503,7 +518,7 @@ document.getElementById('tool-search-form').addEventListener('submit', async (ev
     content.innerHTML = '<span style="color:#727a86;"><i>Thinking...</i></span>';
     
     try {
-        const response = await fetch('/api/tools/chat', {
+        const response = await authFetch('/api/tools/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: input })
