@@ -492,10 +492,27 @@ toolSearch.addEventListener('input', () => {
     document.getElementById('empty-state').hidden = visibleCount > 0;
 });
 
-document.getElementById('tool-search-form').addEventListener('submit', (event) => {
+document.getElementById('tool-search-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const firstVisible = toolCards.find((card) => !card.hidden);
-    if (firstVisible) firstVisible.click();
+    const input = toolSearch.value.trim();
+    if (!input) return;
+    
+    const container = document.getElementById('ai-response-container');
+    const content = container.querySelector('.ai-content');
+    container.hidden = false;
+    content.innerHTML = '<span style="color:#727a86;"><i>Thinking...</i></span>';
+    
+    try {
+        const response = await fetch('/api/tools/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: input })
+        });
+        const data = await readResponse(response);
+        content.innerHTML = markdownToHtml(data.response);
+    } catch (error) {
+        content.innerHTML = '<span style="color:#fa4e59;">Error: ' + error.message + '</span>';
+    }
 });
 
 document.getElementById('auth-logout').addEventListener('click', () => {

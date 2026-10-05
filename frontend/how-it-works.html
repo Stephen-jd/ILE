@@ -79,6 +79,19 @@ new_data = ToolData(tool_name="Tool Name", data="User Request")<br>
 db.add(new_data)<br>
 db.commit()
     </div>
+
+    <h2>5. Comprehensive File Overview</h2>
+    <ul>
+        <li><b>backend/main.py</b>: The core FastAPI application entry point. It wires together all routers and mounts the static frontend.</li>
+        <li><b>backend/database.py</b>: Sets up the SQLAlchemy engine and provides the <code>get_db</code> dependency to securely inject database sessions into routes.</li>
+        <li><b>backend/models.py</b>: Defines your strict MySQL database schema using Python classes (e.g., <code>User</code>, <code>ToolData</code>).</li>
+        <li><b>backend/routers/auth.py</b>: Manages OAuth and Google One Tap credential verification to ensure secure user sessions.</li>
+        <li><b>backend/routers/tools.py</b>: The engine of the AI platform. It contains every API endpoint for your tools, processing inputs (like connecting to Ollama) and returning JSON data to the frontend.</li>
+        <li><b>frontend/index.html</b>: The structural DOM of the interface, rendering the beautiful modern white UI, One Tap popup, and tool grid.</li>
+        <li><b>frontend/css/style.css</b>: Contains all design logic, the visual grid background, typography scaling, and glass-like shadows.</li>
+        <li><b>frontend/js/app.js</b>: The nerve center of the frontend. It intercepts form submissions (like typing in the main chat bar) and orchestrates fetch requests to the backend APIs.</li>
+    </ul>
+
 </div>
 
 </body>
