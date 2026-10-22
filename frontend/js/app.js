@@ -18,6 +18,7 @@ const dialogTitle = document.getElementById('dialog-title');
 const dialogContent = document.getElementById('dialog-content');
 const toolCards = [...document.querySelectorAll('[data-tool]')];
 const toolSearch = document.getElementById('tool-search');
+let audioObjectUrl;
 
 function getAuthToken() {
     const params = new URLSearchParams(window.location.search);
@@ -104,110 +105,94 @@ const languages = [
     ['ta', 'Tamil'], ['te', 'Telugu']
 ];
 
+const field = (id, label, control) => `<div class="field"><label for="${id}">${label}</label>${control}</div>`;
+const input = (id, type, attributes = '') => `<input id="${id}" type="${type}" ${attributes}>`;
+const button = (id, label, style = 'primary') => `<button class="${style}-button" id="${id}" type="button">${label}</button>`;
+const status = (id) => `<p class="status-message" id="${id}" role="status"></p>`;
+const result = (id, content) => `<section class="result-panel" id="${id}" hidden>${content}</section>`;
+const form = (...content) => `<div class="tool-form">${content.join('')}</div>`;
 const toolViews = {
     resume: {
         title: 'Resume Analyzer (AI)',
-        content: `<div class="tool-form">
-          <div class="field"><label for="resume-jd">Job description</label><textarea id="resume-jd" placeholder="Paste the job description"></textarea></div>
-          <div class="field"><label for="resume-file">Resume PDF</label><input id="resume-file" type="file" accept="application/pdf,.pdf"></div>
-          <button class="primary-button" id="resume-run" type="button">Analyze resume</button>
-          <p class="status-message" id="resume-status" role="status"></p>
-          <section class="result-panel" id="resume-result" hidden></section>
-        </div>`
+        content: form(
+            field('resume-jd', 'Job description', '<textarea id="resume-jd" placeholder="Paste the job description"></textarea>'),
+            field('resume-file', 'Resume PDF', input('resume-file', 'file', 'accept="application/pdf,.pdf"')),
+            button('resume-run', 'Analyze resume'), status('resume-status'), result('resume-result', '')
+        )
     },
     image: {
         title: 'Text to Image',
-        content: `<div class="tool-form">
-          <div class="field"><label for="image-prompt">Image prompt</label><textarea id="image-prompt" placeholder="Describe the image you want to create"></textarea></div>
-          <button class="primary-button" id="image-run" type="button">Generate image</button>
-          <p class="status-message" id="image-status" role="status"></p>
-          <section class="result-panel" id="image-result" hidden><img id="generated-image" alt="Generated from your prompt"></section>
-        </div>`
+        content: form(
+            field('image-prompt', 'Image prompt', '<textarea id="image-prompt" placeholder="Describe the image you want to create"></textarea>'),
+            button('image-run', 'Generate image'), status('image-status'),
+            result('image-result', '<img id="generated-image" alt="Generated from your prompt">')
+        )
     },
     code: {
         title: 'Code Explainer',
-        content: `<div class="tool-form">
-          <div class="field"><label for="code-input">Code</label><textarea id="code-input" placeholder="Paste code to explain"></textarea></div>
-          <button class="primary-button" id="code-run" type="button">Explain code</button>
-          <p class="status-message" id="code-status" role="status"></p>
-          <section class="result-panel" id="code-result" hidden><pre></pre></section>
-        </div>`
+        content: form(
+            field('code-input', 'Code', '<textarea id="code-input" placeholder="Paste code to explain"></textarea>'),
+            button('code-run', 'Explain code'), status('code-status'), result('code-result', '<pre></pre>')
+        )
     },
     markdown: {
         title: 'Markdown to HTML',
-        content: `<div class="tool-form">
-          <div class="field"><label for="markdown-input">Markdown</label><textarea id="markdown-input" placeholder="# A heading&#10;Write markdown here"></textarea></div>
-          <button class="primary-button" id="markdown-run" type="button">Convert to HTML</button>
-          <section class="result-panel" id="markdown-result" hidden>
-            <textarea id="markdown-output" readonly aria-label="Generated HTML"></textarea>
-            <div class="result-actions"><button class="subtle-button" id="markdown-copy" type="button">Copy HTML</button><button class="subtle-button" id="markdown-download" type="button">Download HTML</button></div>
-            <div class="result-preview" id="markdown-preview"></div>
-          </section>
-        </div>`
+        content: form(
+            field('markdown-input', 'Markdown', '<textarea id="markdown-input" placeholder="# A heading&#10;Write markdown here"></textarea>'),
+            button('markdown-run', 'Convert to HTML'),
+            result('markdown-result', '<textarea id="markdown-output" readonly aria-label="Generated HTML"></textarea><div class="result-actions"><button class="subtle-button" id="markdown-copy" type="button">Copy HTML</button><button class="subtle-button" id="markdown-download" type="button">Download HTML</button></div><div class="result-preview" id="markdown-preview"></div>')
+        )
     },
     beautify: {
         title: 'Message Beautifier',
-        content: `<div class="tool-form">
-          <div class="field"><label for="message-input">Draft message</label><textarea id="message-input" placeholder="Paste your draft"></textarea></div>
-          <button class="primary-button" id="message-run" type="button">Improve message</button>
-          <p class="status-message" id="message-status" role="status"></p>
-          <section class="result-panel" id="message-result" hidden><pre></pre><div class="result-actions"><button class="subtle-button" id="message-copy" type="button">Copy message</button></div></section>
-        </div>`
+        content: form(
+            field('message-input', 'Draft message', '<textarea id="message-input" placeholder="Paste your draft"></textarea>'),
+            button('message-run', 'Improve message'), status('message-status'),
+            result('message-result', '<pre></pre><div class="result-actions"><button class="subtle-button" id="message-copy" type="button">Copy message</button></div>')
+        )
     },
     pdf: {
         title: 'PDF to Text',
-        content: `<div class="tool-form">
-          <div class="field"><label for="pdf-file">PDF file</label><input id="pdf-file" type="file" accept="application/pdf,.pdf"></div>
-          <button class="primary-button" id="pdf-run" type="button">Extract text</button>
-          <p class="status-message" id="pdf-status" role="status"></p>
-          <section class="result-panel" id="pdf-result" hidden><textarea id="pdf-output" readonly aria-label="Extracted PDF text"></textarea><div class="result-actions"><button class="subtle-button" id="pdf-copy" type="button">Copy text</button></div></section>
-        </div>`
+        content: form(
+            field('pdf-file', 'PDF file', input('pdf-file', 'file', 'accept="application/pdf,.pdf"')),
+            button('pdf-run', 'Extract text'), status('pdf-status'),
+            result('pdf-result', '<textarea id="pdf-output" readonly aria-label="Extracted PDF text"></textarea><div class="result-actions"><button class="subtle-button" id="pdf-copy" type="button">Copy text</button></div>')
+        )
     },
     audio: {
         title: 'Text to Audio',
-        content: `<div class="tool-form">
-          <div class="field"><label for="audio-language">Language</label><select id="audio-language">${languages.map(([code, name]) => `<option value="${code}">${name}</option>`).join('')}</select></div>
-          <div class="field"><label for="audio-text">Text to speak</label><textarea id="audio-text" placeholder="Type or paste the text here"></textarea></div>
-          <div class="result-actions"><button class="primary-button" id="audio-run" type="button">Generate audio</button><button class="subtle-button" id="audio-copy" type="button">Copy text</button></div>
-          <p class="status-message" id="audio-status" role="status"></p>
-          <section class="result-panel" id="audio-result" hidden><audio id="audio-player" controls></audio></section>
-        </div>`
+        content: form(
+            field('audio-language', 'Language', `<select id="audio-language">${languages.map(([code, name]) => `<option value="${code}">${name}</option>`).join('')}</select>`),
+            field('audio-text', 'Text to speak', '<textarea id="audio-text" placeholder="Type or paste the text here"></textarea>'),
+            `<div class="result-actions">${button('audio-run', 'Generate audio')}${button('audio-copy', 'Copy text', 'subtle')}</div>`,
+            status('audio-status'), result('audio-result', '<audio id="audio-player" controls></audio>')
+        )
     },
     resize: {
         title: 'Image Resize',
-        content: `<div class="tool-form">
-          <div class="field"><label for="resize-file">Image file</label><input id="resize-file" type="file" accept="image/*"></div>
-          <div class="field"><label for="resize-width">Width in pixels</label><input id="resize-width" type="number" min="1" max="8000" value="800"></div>
-          <div class="field"><label for="resize-height">Height in pixels</label><input id="resize-height" type="number" min="1" max="8000" value="600"></div>
-          <button class="primary-button" id="resize-run" type="button">Resize and download</button>
-          <p class="status-message" id="resize-status" role="status"></p>
-        </div>`
-        },
-        hyperlink: {
-                title: 'Hyperlink Generator',
-                content: `<div class="tool-form">
-                    <div class="field"><label for="hyperlink-url">URL</label><input id="hyperlink-url" type="text" inputmode="url" placeholder="https://example.com"></div>
-                    <div class="field"><label for="hyperlink-label">Link text</label><input id="hyperlink-label" type="text" placeholder="Visit our website"></div>
-                    <button class="primary-button" id="hyperlink-run" type="button">Generate HTML link</button>
-                    <p class="status-message" id="hyperlink-status" role="status"></p>
-                    <section class="result-panel" id="hyperlink-result" hidden>
-                        <textarea id="hyperlink-output" readonly aria-label="Generated HTML link"></textarea>
-                        <div class="result-actions"><button class="subtle-button" id="hyperlink-copy" type="button">Copy HTML</button><button class="subtle-button" id="hyperlink-download" type="button">Download HTML</button></div>
-                        <div class="result-preview" id="hyperlink-preview"></div>
-                    </section>
-                </div>`
-        },
-        shortener: {
-                title: 'URL Shortener',
-                content: `<div class="tool-form">
-                    <div class="field"><label for="shortener-url">Long URL</label><input id="shortener-url" type="text" inputmode="url" placeholder="https://example.com/page"></div>
-                    <button class="primary-button" id="shortener-run" type="button">Shorten URL</button>
-                    <p class="status-message" id="shortener-status" role="status"></p>
-                    <section class="result-panel" id="shortener-result" hidden>
-                        <div class="field"><label for="shortener-output">Short URL</label><input id="shortener-output" type="text" readonly></div>
-                        <div class="result-actions"><button class="subtle-button" id="shortener-copy" type="button">Copy URL</button><a class="subtle-button" id="shortener-open" target="_blank" rel="noopener noreferrer">Open short URL</a></div>
-                    </section>
-                </div>`
+        content: form(
+            field('resize-file', 'Image file', input('resize-file', 'file', 'accept="image/*"')),
+            field('resize-width', 'Width in pixels', input('resize-width', 'number', 'min="1" max="8000" value="800"')),
+            field('resize-height', 'Height in pixels', input('resize-height', 'number', 'min="1" max="8000" value="600"')),
+            button('resize-run', 'Resize and download'), status('resize-status')
+        )
+    },
+    hyperlink: {
+        title: 'Hyperlink Generator',
+        content: form(
+            field('hyperlink-url', 'URL', input('hyperlink-url', 'text', 'inputmode="url" placeholder="https://example.com"')),
+            field('hyperlink-label', 'Link text', input('hyperlink-label', 'text', 'placeholder="Visit our website"')),
+            button('hyperlink-run', 'Generate HTML link'), status('hyperlink-status'),
+            result('hyperlink-result', '<textarea id="hyperlink-output" readonly aria-label="Generated HTML link"></textarea><div class="result-actions"><button class="subtle-button" id="hyperlink-copy" type="button">Copy HTML</button><button class="subtle-button" id="hyperlink-download" type="button">Download HTML</button></div><div class="result-preview" id="hyperlink-preview"></div>')
+        )
+    },
+    shortener: {
+        title: 'URL Shortener',
+        content: form(
+            field('shortener-url', 'Long URL', input('shortener-url', 'text', 'inputmode="url" placeholder="https://example.com/page"')),
+            button('shortener-run', 'Shorten URL'), status('shortener-status'),
+            result('shortener-result', `${field('shortener-output', 'Short URL', input('shortener-output', 'text', 'readonly'))}<div class="result-actions"><button class="subtle-button" id="shortener-copy" type="button">Copy URL</button><a class="subtle-button" id="shortener-open" target="_blank" rel="noopener noreferrer">Open short URL</a></div>`)
+        )
     }
 };
 
@@ -230,21 +215,21 @@ async function readResponse(response) {
     return data;
 }
 
-async function runOllamaTool({ endpoint, body, statusId, resultId, resultProperty, buttonId }) {
+async function postJson(url, body) {
+    const response = await authFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    return readResponse(response);
+}
+
+async function runTask(buttonId, statusId, workingMessage, task) {
     const button = document.getElementById(buttonId);
-    const result = document.getElementById(resultId);
     button.disabled = true;
-    setStatus(statusId, 'Working...');
-    result.hidden = true;
+    setStatus(statusId, workingMessage);
     try {
-        const data = await readResponse(await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        }));
-        result.querySelector('pre').textContent = data[resultProperty];
-        result.hidden = false;
-        setStatus(statusId, 'Done.');
+        await task();
     } catch (error) {
         setStatus(statusId, error.message);
     } finally {
@@ -252,19 +237,27 @@ async function runOllamaTool({ endpoint, body, statusId, resultId, resultPropert
     }
 }
 
+async function runOllamaTool({ endpoint, body, statusId, resultId, resultProperty, buttonId }) {
+    const result = document.getElementById(resultId);
+    result.hidden = true;
+    await runTask(buttonId, statusId, 'Working...', async () => {
+        const data = await postJson(endpoint, body);
+        result.querySelector('pre').textContent = data[resultProperty];
+        result.hidden = false;
+        setStatus(statusId, 'Done.');
+    });
+}
+
 function wireTool(toolId) {
     if (toolId === 'resume') {
-        document.getElementById('resume-run').addEventListener('click', async (event) => {
-            const button = event.currentTarget;
+        document.getElementById('resume-run').addEventListener('click', async () => {
             const file = document.getElementById('resume-file').files[0];
             const job = document.getElementById('resume-jd').value.trim();
             if (!file || !job) return setStatus('resume-status', 'Choose a PDF and enter the job description.');
             const form = new FormData();
             form.append('job_description', job);
             form.append('resume', file);
-            button.disabled = true;
-            setStatus('resume-status', 'Analyzing resume with your local AI model...');
-            try {
+            await runTask('resume-run', 'resume-status', 'Analyzing resume with your local AI model...', async () => {
                 const data = await readResponse(await authFetch('/api/tools/resume-analyzer', { method: 'POST', body: form }));
                 const result = document.getElementById('resume-result');
                 result.replaceChildren();
@@ -275,11 +268,7 @@ function wireTool(toolId) {
                 result.append(heading, details);
                 result.hidden = false;
                 setStatus('resume-status', 'Analysis complete.');
-            } catch (error) {
-                setStatus('resume-status', error.message);
-            } finally {
-                button.disabled = false;
-            }
+            });
         });
     } else if (toolId === 'image') {
         document.getElementById('image-run').addEventListener('click', () => {
@@ -299,7 +288,14 @@ function wireTool(toolId) {
         document.getElementById('code-run').addEventListener('click', () => {
             const code = document.getElementById('code-input').value.trim();
             if (!code) return setStatus('code-status', 'Paste code to explain.');
-            runOllamaTool({ endpoint: '/api/tools/explain-code', body: { code }, statusId: 'code-status', resultId: 'code-result', resultProperty: 'explanation', buttonId: 'code-run' });
+            runOllamaTool({
+                endpoint: '/api/tools/explain-code',
+                body: { code },
+                statusId: 'code-status',
+                resultId: 'code-result',
+                resultProperty: 'explanation',
+                buttonId: 'code-run'
+            });
         });
     } else if (toolId === 'markdown') {
         document.getElementById('markdown-run').addEventListener('click', () => {
@@ -310,65 +306,56 @@ function wireTool(toolId) {
             document.getElementById('markdown-preview').innerHTML = html;
             result.hidden = false;
         });
-        document.getElementById('markdown-copy').addEventListener('click', () => copyText('markdown-output', 'HTML copied.'));
+        document.getElementById('markdown-copy').addEventListener('click', () => copyText('markdown-output', null, 'HTML copied.'));
         document.getElementById('markdown-download').addEventListener('click', () => downloadText('converted.html', document.getElementById('markdown-output').value, 'text/html'));
     } else if (toolId === 'beautify') {
         document.getElementById('message-run').addEventListener('click', () => {
             const message = document.getElementById('message-input').value.trim();
             if (!message) return setStatus('message-status', 'Enter a draft message first.');
-            runOllamaTool({ endpoint: '/api/tools/beautify-message', body: { message }, statusId: 'message-status', resultId: 'message-result', resultProperty: 'beautified', buttonId: 'message-run' });
+            runOllamaTool({
+                endpoint: '/api/tools/beautify-message',
+                body: { message },
+                statusId: 'message-status',
+                resultId: 'message-result',
+                resultProperty: 'beautified',
+                buttonId: 'message-run'
+            });
         });
-        document.getElementById('message-copy').addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(document.querySelector('#message-result pre').textContent);
-                setStatus('message-status', 'Message copied.');
-            } catch { setStatus('message-status', 'Copy failed.'); }
-        });
+        document.getElementById('message-copy').addEventListener('click', () => copyText('message-result pre', 'message-status', 'Message copied.'));
     } else if (toolId === 'pdf') {
-        document.getElementById('pdf-run').addEventListener('click', async (event) => {
-            const button = event.currentTarget;
+        document.getElementById('pdf-run').addEventListener('click', async () => {
             const file = document.getElementById('pdf-file').files[0];
             if (!file) return setStatus('pdf-status', 'Choose a PDF file first.');
             const form = new FormData();
             form.append('pdf', file);
-            button.disabled = true;
-            setStatus('pdf-status', 'Extracting text...');
-            try {
+            await runTask('pdf-run', 'pdf-status', 'Extracting text...', async () => {
                 const data = await readResponse(await authFetch('/api/tools/pdf-to-text', { method: 'POST', body: form }));
                 document.getElementById('pdf-output').value = data.text;
                 document.getElementById('pdf-result').hidden = false;
                 setStatus('pdf-status', 'Text extracted.');
-            } catch (error) { setStatus('pdf-status', error.message); }
-            finally { button.disabled = false; }
+            });
         });
-        document.getElementById('pdf-copy').addEventListener('click', () => copyText('pdf-output', 'Extracted text copied.'));
+        document.getElementById('pdf-copy').addEventListener('click', () => copyText('pdf-output', 'pdf-status', 'Extracted text copied.'));
     } else if (toolId === 'audio') {
-        document.getElementById('audio-run').addEventListener('click', async (event) => {
-            const button = event.currentTarget;
+        document.getElementById('audio-run').addEventListener('click', async () => {
             const text = document.getElementById('audio-text').value.trim();
             const lang = document.getElementById('audio-language').value;
             if (!text) return setStatus('audio-status', 'Enter text to speak.');
-            button.disabled = true;
-            setStatus('audio-status', 'Generating audio...');
-            try {
+            await runTask('audio-run', 'audio-status', 'Generating audio...', async () => {
                 const response = await authFetch('/api/tools/text-to-audio', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang })
                 });
                 if (!response.ok) throw new Error((await response.json()).detail || 'Audio generation failed.');
                 const player = document.getElementById('audio-player');
-                player.src = URL.createObjectURL(await response.blob());
+                if (audioObjectUrl) URL.revokeObjectURL(audioObjectUrl);
+                audioObjectUrl = URL.createObjectURL(await response.blob());
+                player.src = audioObjectUrl;
                 document.getElementById('audio-result').hidden = false;
                 setStatus('audio-status', 'Audio ready.');
                 await player.play().catch(() => {});
-            } catch (error) { setStatus('audio-status', error.message); }
-            finally { button.disabled = false; }
+            });
         });
-        document.getElementById('audio-copy').addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(document.getElementById('audio-text').value);
-                setStatus('audio-status', 'Text copied.');
-            } catch { setStatus('audio-status', 'Copy failed.'); }
-        });
+        document.getElementById('audio-copy').addEventListener('click', () => copyText('audio-text', 'audio-status', 'Text copied.'));
     } else if (toolId === 'resize') {
         document.getElementById('resize-run').addEventListener('click', async () => {
             const file = document.getElementById('resize-file').files[0];
@@ -411,41 +398,25 @@ function wireTool(toolId) {
                 setStatus('hyperlink-status', error.message || 'Enter a valid web URL.');
             }
         });
-        document.getElementById('hyperlink-copy').addEventListener('click', () => copyText('hyperlink-output', 'HTML link copied.'));
+        document.getElementById('hyperlink-copy').addEventListener('click', () => copyText('hyperlink-output', 'hyperlink-status', 'HTML link copied.'));
         document.getElementById('hyperlink-download').addEventListener('click', () => {
             const markup = document.getElementById('hyperlink-output').value;
             downloadText('hyperlink.html', `<!doctype html><html><body>${markup}</body></html>`, 'text/html');
         });
     } else if (toolId === 'shortener') {
-        document.getElementById('shortener-run').addEventListener('click', async (event) => {
-            const button = event.currentTarget;
+        document.getElementById('shortener-run').addEventListener('click', async () => {
             const url = document.getElementById('shortener-url').value.trim();
             if (!url) return setStatus('shortener-status', 'Enter a URL to shorten.');
-            button.disabled = true;
-            setStatus('shortener-status', 'Creating your short URL...');
             document.getElementById('shortener-result').hidden = true;
-            try {
-                const data = await readResponse(await authFetch('/api/tools/shorten', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                }));
+            await runTask('shortener-run', 'shortener-status', 'Creating your short URL...', async () => {
+                const data = await postJson('/api/tools/shorten', { url });
                 document.getElementById('shortener-output').value = data.short_url;
                 document.getElementById('shortener-open').href = data.short_url;
                 document.getElementById('shortener-result').hidden = false;
                 setStatus('shortener-status', 'Short URL created and saved.');
-            } catch (error) {
-                setStatus('shortener-status', error.message);
-            } finally {
-                button.disabled = false;
-            }
+            });
         });
-        document.getElementById('shortener-copy').addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(document.getElementById('shortener-output').value);
-                setStatus('shortener-status', 'Short URL copied.');
-            } catch { setStatus('shortener-status', 'Copy failed.'); }
-        });
+        document.getElementById('shortener-copy').addEventListener('click', () => copyText('shortener-output', 'shortener-status', 'Short URL copied.'));
     }
 }
 
@@ -469,12 +440,14 @@ function markdownToHtml(markdown) {
     }).join('\n');
 }
 
-async function copyText(elementId, successMessage) {
+async function copyText(elementId, statusId, successMessage) {
     try {
-        await navigator.clipboard.writeText(document.getElementById(elementId).value);
-        const status = document.querySelector('.status-message');
-        if (status) status.textContent = successMessage;
-    } catch { /* Clipboard permissions may be unavailable outside a secure context. */ }
+        const element = document.querySelector(`#${elementId}`);
+        await navigator.clipboard.writeText(element.value ?? element.textContent);
+        if (statusId) setStatus(statusId, successMessage);
+    } catch {
+        if (statusId) setStatus(statusId, 'Copy failed.');
+    }
 }
 
 function downloadBlob(filename, blob) {
@@ -494,6 +467,14 @@ toolCards.forEach((card) => card.addEventListener('click', () => openTool(card.d
 document.getElementById('dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
+});
+dialog.addEventListener('close', () => {
+    const player = document.getElementById('audio-player');
+    player?.pause();
+    player?.removeAttribute('src');
+    player?.load();
+    if (audioObjectUrl) URL.revokeObjectURL(audioObjectUrl);
+    audioObjectUrl = undefined;
 });
 
 toolSearch.addEventListener('input', () => {
@@ -518,12 +499,7 @@ document.getElementById('tool-search-form').addEventListener('submit', async (ev
     content.innerHTML = '<span style="color:#727a86;"><i>Thinking...</i></span>';
     
     try {
-        const response = await authFetch('/api/tools/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: input })
-        });
-        const data = await readResponse(response);
+        const data = await postJson('/api/tools/chat', { prompt: input });
         content.innerHTML = markdownToHtml(data.response);
     } catch (error) {
         content.innerHTML = '<span style="color:#fa4e59;">Error: ' + error.message + '</span>';
@@ -537,9 +513,3 @@ document.getElementById('auth-logout').addEventListener('click', () => {
 });
 
 setupGoogleSignIn();
-
-
-
-
-
-

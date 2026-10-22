@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import User
-from backend.auth import create_access_token
+from backend.auth import create_access_token, get_current_user
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
 import json
@@ -42,56 +42,8 @@ async def login(request: Request):
     redirect_uri = 'http://127.0.0.1:8000/accounts/google/login/callback/'
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@router.get("/auth")
-async def auth(request: Request, db: Session = Depends(get_db)):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get('userinfo')
-        if not user_info:
-            raise HTTPException(status_code=400, detail="Could not validate credentials")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    email = user_info.get("email")
-    name = user_info.get("name")
-    picture = user_info.get("picture")
-
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        user = User(email=email, name=name, picture=picture)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    access_token = create_access_token(data={"sub": user.email, "id": user.id})
-
-    response = RedirectResponse(url=f"/?token={access_token}")
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
-    return response
-
 @router.get("/me")
-def read_users_me(request: Request, db: Session = Depends(get_db)):
-    from backend.auth import decode_access_token
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        token = request.cookies.get("access_token")
-        if token and token.startswith('Bearer '):
-            token = token.split(" ", 1)[1]
-        elif token:
-            token = token
-        else:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-    else:
-        token = auth_header.split(" ", 1)[1]
-
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = db.query(User).filter(User.id == payload.get("id")).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+def read_users_me(user: User = Depends(get_current_user)):
     return {"id": user.id, "email": user.email, "name": user.name, "picture": user.picture, "is_admin": user.is_admin}
 
 from pydantic import BaseModel

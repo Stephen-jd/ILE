@@ -12,34 +12,11 @@ from gtts import gTTS
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
+from backend.auth import get_current_user
 from backend.models import ShortURL
 from backend.database import get_db
 
 tools_router = APIRouter()
-
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    from backend.auth import decode_access_token
-    from backend.models import User
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        token = request.cookies.get("access_token")
-        if token and token.startswith('Bearer '):
-            token = token.split(" ", 1)[1]
-        elif token:
-            pass # token is already the token
-        else:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-    else:
-        token = auth_header.split(" ", 1)[1]
-
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = db.query(User).filter(User.id == payload.get("id")).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
 
 OLLAMA_URL = os.getenv("ILE_OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("ILE_OLLAMA_MODEL", "llama3.2")

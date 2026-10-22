@@ -4,6 +4,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from backend.database import engine, Base, get_db
+from backend.auth import create_access_token
 from backend.models import ShortURL
 from backend.routers import auth, dev
 from backend.routers import tools
@@ -34,7 +35,7 @@ def redirect_to_url(short_code: str, db: Session = Depends(get_db)):
 
 @app.get("/accounts/google/login/callback/")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
-    from backend.routers.auth import oauth, create_access_token
+    from backend.routers.auth import oauth
     from backend.models import User
     try:
         token = await oauth.google.authorize_access_token(request)
